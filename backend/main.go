@@ -39,6 +39,13 @@ func ensureDataDirs() error {
 	return nil
 }
 
+func limitRequestBody(maxBytes int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		c.Next()
+	}
+}
+
 func main() {
 	if err := ensureDataDirs(); err != nil {
 		log.Fatalf("failed to create data directories: %v", err)
@@ -57,8 +64,10 @@ func main() {
 	analyzeHandler := handlers.NewAnalyzeHandler(pythonRunner, historyStore)
 	historyHandler := handlers.NewHistoryHandler(historyStore)
 	sampleHandler := handlers.NewSampleHandler()
+	uploadHandler := handlers.NewUploadHandler()
 
 	r := gin.Default()
+	r.MaxMultipartMemory = 50 << 20
 
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
@@ -66,10 +75,13 @@ func main() {
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	r.Use(cors.New(config))
 
+	r.Use(limitRequestBody(50 << 20))
+
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	r.POST("/api/upload", uploadHandler.Upload)
 	r.GET("/api/sample", sampleHandler.GetSample)
 	r.POST("/api/analyze", analyzeHandler.Analyze)
 	r.GET("/api/history", historyHandler.ListHistory)
