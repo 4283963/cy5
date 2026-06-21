@@ -26,15 +26,17 @@ type Stats struct {
 }
 
 type AnalysisRecord struct {
-	ID        string    `json:"id"`
-	FileName  string    `json:"fileName"`
-	CreatedAt string    `json:"createdAt"`
-	Raw       []float64 `json:"raw"`
-	Filtered  []float64 `json:"filtered"`
-	FFTFreq   []float64 `json:"fftFreq"`
-	FFTMag    []float64 `json:"fftMag"`
-	Peaks     []Peak    `json:"peaks"`
-	Stats     Stats     `json:"stats"`
+	ID         string        `json:"id"`
+	FileName   string        `json:"fileName"`
+	CreatedAt  string        `json:"createdAt"`
+	SampleRate int           `json:"sampleRate"`
+	Raw        []float64     `json:"raw"`
+	Filtered   []float64     `json:"filtered"`
+	FFTFreq    []float64     `json:"fftFreq"`
+	FFTMag     []float64     `json:"fftMag"`
+	Peaks      []Peak        `json:"peaks"`
+	Segments   []SegmentPeak `json:"segments"`
+	Stats      Stats         `json:"stats"`
 }
 
 type HistorySummary struct {

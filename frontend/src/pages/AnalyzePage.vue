@@ -8,8 +8,9 @@ import WaveformChart from '@/components/WaveformChart.vue'
 import FFTChart from '@/components/FFTChart.vue'
 import PeakList from '@/components/PeakList.vue'
 import StatsCards from '@/components/StatsCards.vue'
+import SegmentCards from '@/components/SegmentCards.vue'
 import { analyzeSignal, getSample } from '@/api'
-import type { AnalysisResult, AnalyzeParams, Peak, Stats } from '@/types'
+import type { AnalysisResult, AnalyzeParams, Peak, Stats, SegmentPeak } from '@/types'
 
 const signal = ref<number[]>([])
 const fileName = ref('')
@@ -33,10 +34,14 @@ const displayPeaks = computed<Peak[]>(() => result.value?.peaks ?? [])
 const displayStats = computed<Stats | null>(() => result.value?.stats ?? null)
 const displayFFTFreq = computed(() => result.value?.fftFreq ?? [])
 const displayFFTMag = computed(() => result.value?.fftMag ?? [])
+const displaySegments = computed<SegmentPeak[]>(() => result.value?.segments ?? [])
 
-const handleSignalLoaded = (payload: { signal: number[]; fileName: string }) => {
+const handleSignalLoaded = (payload: { signal: number[]; fileName: string; sampleRate?: number }) => {
   signal.value = payload.signal
   fileName.value = payload.fileName
+  if (payload.sampleRate !== undefined) {
+    sampleRate.value = payload.sampleRate
+  }
   result.value = null
   highlightPeakIndex.value = -1
 }
@@ -154,6 +159,10 @@ onMounted(() => {
                 运行分析后显示频谱
               </div>
             </div>
+          </OscilloCard>
+
+          <OscilloCard v-if="displaySegments.length > 0" class="px-5 py-4">
+            <SegmentCards :segments="displaySegments" />
           </OscilloCard>
         </div>
       </div>

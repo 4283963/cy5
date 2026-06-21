@@ -6,6 +6,7 @@ import WaveformChart from '@/components/WaveformChart.vue'
 import FFTChart from '@/components/FFTChart.vue'
 import PeakList from '@/components/PeakList.vue'
 import StatsCards from '@/components/StatsCards.vue'
+import SegmentCards from '@/components/SegmentCards.vue'
 import { getHistoryList, getHistoryRecord, deleteHistoryRecord } from '@/api'
 import type { HistorySummary, AnalysisResult } from '@/types'
 
@@ -219,7 +220,7 @@ onMounted(() => {
                 <WaveformChart
                   :raw-signal="detail.raw"
                   :filtered-signal="detail.filtered"
-                  :sample-rate="100"
+                  :sample-rate="detail.sampleRate || 100"
                   :peaks="detail.peaks"
                   :highlight-index="highlightPeakIndex"
                 />
@@ -229,6 +230,10 @@ onMounted(() => {
               <div class="h-[200px]">
                 <FFTChart :freq="detail.fftFreq" :mag="detail.fftMag" />
               </div>
+            </OscilloCard>
+
+            <OscilloCard v-if="detail.segments && detail.segments.length > 0" class="px-5 py-4">
+              <SegmentCards :segments="detail.segments" />
             </OscilloCard>
           </div>
         </div>

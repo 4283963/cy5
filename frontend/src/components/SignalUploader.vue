@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Upload, FileText, AlertCircle } from 'lucide-vue-next'
+import { Upload, FileText, AlertCircle, Loader2 } from 'lucide-vue-next'
+import { uploadSignalFile } from '@/api'
 
 const emit = defineEmits<{
-  (e: 'signalLoaded', payload: { signal: number[]; fileName: string }): void
+  (e: 'signalLoaded', payload: { signal: number[]; fileName: string; sampleRate: number }): void
 }>()
 
 const isDragging = ref(false)
+const uploading = ref(false)
 const error = ref('')
 const fileInfo = ref<{ name: string; size: number; points: number } | null>(null)
 
@@ -34,49 +36,29 @@ const handleFileSelect = (e: Event) => {
   if (files && files.length > 0) {
     processFile(files[0])
   }
+  target.value = ''
 }
 
 const processFile = async (file: File) => {
   error.value = ''
+  uploading.value = true
   try {
-    const text = await file.text()
-    let signal: number[] = []
-
-    if (file.name.toLowerCase().endsWith('.json')) {
-      const data = JSON.parse(text)
-      if (Array.isArray(data)) {
-        signal = data.map(Number)
-      } else if (data.signal && Array.isArray(data.signal)) {
-        signal = data.signal.map(Number)
-      } else {
-        throw new Error('JSON 文件格式不正确，需要包含 signal 数组或本身是数组')
-      }
-    } else if (file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.txt')) {
-      const lines = text.trim().split(/\r?\n/)
-      signal = lines
-        .filter((l) => l.trim() !== '')
-        .map((l) => {
-          const parts = l.split(/[,;\t]/)
-          return Number(parts[parts.length - 1].trim())
-        })
-        .filter((v) => !isNaN(v))
-    } else {
-      throw new Error('仅支持 .csv、.json、.txt 格式')
-    }
-
-    if (signal.length === 0) {
-      throw new Error('未找到有效的信号数据')
-    }
-
+    const result = await uploadSignalFile(file)
     fileInfo.value = {
-      name: file.name,
+      name: result.fileName,
       size: file.size,
-      points: signal.length,
+      points: result.points,
     }
-
-    emit('signalLoaded', { signal, fileName: file.name })
+    emit('signalLoaded', {
+      signal: result.signal,
+      fileName: result.fileName,
+      sampleRate: result.sampleRate,
+    })
   } catch (e: any) {
-    error.value = e.message || '文件解析失败'
+    fileInfo.value = null
+    error.value = e.response?.data?.error || e.message || '文件上传失败'
+  } finally {
+    uploading.value = false
   }
 }
 </script>
@@ -89,6 +71,7 @@ const processFile = async (file: File) => {
       @drop="handleDrop"
       :class="[
         'relative border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer',
+        uploading ? 'opacity-60 pointer-events-none' : '',
         isDragging
           ? 'border-osc-green bg-osc-green/5 border-glow-green'
           : 'border-osc-border hover:border-osc-green/50 hover:bg-osc-green/[0.02]',
@@ -97,18 +80,20 @@ const processFile = async (file: File) => {
       <input
         type="file"
         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        accept=".csv,.json,.txt"
+        accept=".csv,.json,.txt,.dat"
+        :disabled="uploading"
         @change="handleFileSelect"
       />
       <div class="flex flex-col items-center gap-2 pointer-events-none">
         <div class="w-10 h-10 rounded-full bg-osc-green/10 flex items-center justify-center">
-          <Upload class="w-5 h-5 text-osc-green" />
+          <Loader2 v-if="uploading" class="w-5 h-5 text-osc-green animate-spin" />
+          <Upload v-else class="w-5 h-5 text-osc-green" />
         </div>
         <div class="text-osc-bright text-sm font-medium">
-          拖拽文件到此处，或点击选择
+          {{ uploading ? '上传解析中...' : '拖拽文件到此处，或点击选择' }}
         </div>
         <div class="text-osc-muted text-xs">
-          支持 CSV / JSON / TXT 格式
+          支持 CSV / JSON / TXT / DAT 格式，最大 50MB
         </div>
       </div>
     </div>
@@ -121,6 +106,7 @@ const processFile = async (file: File) => {
           {{ fileInfo.points.toLocaleString() }} 个采样点 · {{ (fileInfo.size / 1024).toFixed(1) }} KB
         </div>
       </div>
+      <div class="w-2 h-2 rounded-full bg-osc-green shadow-green-glow"></div>
     </div>
 
     <div v-if="error" class="bg-osc-red/10 border border-osc-red/30 rounded-md px-3 py-2 flex items-center gap-2">

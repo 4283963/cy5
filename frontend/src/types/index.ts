@@ -6,6 +6,21 @@ export interface Peak {
   prominence: number
 }
 
+export interface SegmentPeak {
+  segmentIndex: number
+  startIndex: number
+  endIndex: number
+  startTime: number
+  endTime: number
+  peakIndex: number
+  peakTime: number
+  peakDepth: number
+  amplitude: number
+  sharpness: number
+  waveform: number[]
+  timeAxis: number[]
+}
+
 export interface Stats {
   points: number
   snrImprovement: number
@@ -17,11 +32,13 @@ export interface AnalysisResult {
   id: string
   fileName: string
   createdAt: string
+  sampleRate: number
   raw: number[]
   filtered: number[]
   fftFreq: number[]
   fftMag: number[]
   peaks: Peak[]
+  segments: SegmentPeak[]
   stats: Stats
 }
 
@@ -30,6 +47,13 @@ export interface AnalyzeParams {
   fftWindow: string
   peakProminence: number
   peakDistance: number
+}
+
+export interface UploadResponse {
+  signal: number[]
+  sampleRate: number
+  fileName: string
+  points: number
 }
 
 export interface HistorySummary {

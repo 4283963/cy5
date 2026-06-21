@@ -100,15 +100,19 @@ func (h *AnalyzeHandler) Analyze(c *gin.Context) {
 		}
 	}
 
+	segments := services.ComputeSegments(pyOutput.Filtered, sampleRate, 5, 200)
+
 	record := &services.AnalysisRecord{
-		ID:        id,
-		FileName:  fileName,
-		CreatedAt: time.Now().Format(time.RFC3339),
-		Raw:       req.Signal,
-		Filtered:  pyOutput.Filtered,
-		FFTFreq:   pyOutput.FFTFreq,
-		FFTMag:    pyOutput.FFTMag,
-		Peaks:     peaks,
+		ID:         id,
+		FileName:   fileName,
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		SampleRate: int(sampleRate),
+		Raw:        req.Signal,
+		Filtered:   pyOutput.Filtered,
+		FFTFreq:    pyOutput.FFTFreq,
+		FFTMag:     pyOutput.FFTMag,
+		Peaks:      peaks,
+		Segments:   segments,
 		Stats: services.Stats{
 			Points:         pyOutput.Stats.Points,
 			SNRImprovement: pyOutput.Stats.SNRImprovement,

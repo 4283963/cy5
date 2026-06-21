@@ -1,13 +1,26 @@
 import axios from 'axios'
-import type { AnalysisResult, AnalyzeParams, HistoryListResponse, SampleResponse } from '@/types'
+import type { AnalysisResult, AnalyzeParams, HistoryListResponse, SampleResponse, UploadResponse } from '@/types'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8080/api',
   timeout: 60000,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
 })
 
 export async function getSample(): Promise<SampleResponse> {
   const { data } = await api.get<SampleResponse>('/sample')
+  return data
+}
+
+export async function uploadSignalFile(file: File): Promise<UploadResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post<UploadResponse>('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return data
 }
 
